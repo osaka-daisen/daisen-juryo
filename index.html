@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>搬入重量分析｜大泉衛生</title>
+<style>
+:root{
+  --bg:#f4f6f5; --surface:#fcfcfb; --line:#e1e6e4; --grid:#eceff0;
+  --ink:#1d2624; --ink2:#4c5856; --muted:#7c8785;
+  --brand:#008070; --brand-ink:#ffffff; --brand-soft:#e3f2ef;
+  --before:#b07a2a; --after:#00876f;
+  --up:#a3461f; --down:#1f6aa3; --warn-bg:#fff6e0; --warn-ink:#7a5300;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121413; --surface:#1a1a19; --line:#2c302f; --grid:#262a29;
+    --ink:#e9eeec; --ink2:#b5bfbc; --muted:#87918f;
+    --brand:#22a18c; --brand-ink:#0b1513; --brand-soft:#16302b;
+    --before:#bf8a32; --after:#22a18c;
+    --up:#e08a62; --down:#6aaee0; --warn-bg:#3a3018; --warn-ink:#f0d48a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121413; --surface:#1a1a19; --line:#2c302f; --grid:#262a29;
+  --ink:#e9eeec; --ink2:#b5bfbc; --muted:#87918f;
+  --brand:#22a18c; --brand-ink:#0b1513; --brand-soft:#16302b;
+  --before:#bf8a32; --after:#22a18c;
+  --up:#e08a62; --down:#6aaee0; --warn-bg:#3a3018; --warn-ink:#f0d48a;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif;font-size:15px;line-height:1.6;-webkit-text-size-adjust:100%}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 80px}
+header{background:var(--brand);color:var(--brand-ink)}
+header .wrap{padding-top:14px;padding-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.02em}
+header .status{font-size:12px;opacity:.9;margin-left:auto}
+header button{background:transparent;color:inherit;border:1px solid currentColor;border-radius:8px;padding:4px 10px;font:inherit;font-size:13px;cursor:pointer;opacity:.95}
+nav.tabs{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+nav.tabs .wrap{display:flex;gap:4px;padding-bottom:0;overflow-x:auto}
+nav.tabs button{flex:0 0 auto;background:none;border:0;border-bottom:3px solid transparent;padding:12px 12px 9px;font:inherit;font-size:14px;color:var(--ink2);cursor:pointer;font-weight:600}
+nav.tabs button[aria-selected="true"]{color:var(--brand);border-bottom-color:var(--brand)}
+.banner{margin:14px 0 0;padding:10px 14px;border-radius:10px;background:var(--warn-bg);color:var(--warn-ink);font-size:13px}
+.err{background:#fde8e4;color:#8a2a14}
+section.tab{display:none;padding-top:16px}
+section.tab.on{display:block}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.card h2{font-size:15px;margin:0 0 10px}
+.card h2 small{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row.spread{justify-content:space-between}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink2);font-weight:600}
+input,select,textarea{font:inherit;font-size:15px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:40px}
+textarea{min-height:64px;resize:vertical}
+button.btn{font:inherit;font-size:14px;font-weight:700;background:var(--brand);color:var(--brand-ink);border:0;border-radius:8px;padding:9px 16px;cursor:pointer;min-height:40px}
+button.ghost{font:inherit;font-size:13px;background:transparent;color:var(--ink2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;min-height:36px}
+button:disabled{opacity:.5;cursor:default}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi .l{font-size:12px;color:var(--muted);font-weight:600}
+.kpi .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.3}
+.kpi .v small{font-size:13px;font-weight:600;color:var(--ink2);margin-left:2px}
+.kpi .s{font-size:12px;color:var(--ink2)}
+.tbl-wrap{overflow-x:auto;margin:0 -4px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-size:14px}
+th{font-size:12px;color:var(--muted);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+td .sub{display:block;font-size:11px;color:var(--muted)}
+tr.total td{font-weight:700;border-top:2px solid var(--line)}
+.up{color:var(--up)} .down{color:var(--down)} .mut{color:var(--muted)}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{fill:var(--muted);font-size:11px;font-family:inherit}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12px;line-height:1.5;padding:6px 9px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-100%);margin-top:-10px;display:none;z-index:3;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--ink2);margin:4px 0 6px;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.chg{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--surface)}
+.chg .hd{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.chg .nm{font-weight:700;font-size:16px}
+.badge{font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;background:var(--brand-soft);color:var(--brand)}
+.badge.minus{background:#f1e7dc;color:#7a4a12}
+.chg .meta{font-size:12px;color:var(--ink2)}
+.cmp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 6px}
+.cmp div{background:var(--bg);border-radius:8px;padding:8px 10px}
+.cmp .l{font-size:11px;color:var(--muted);font-weight:600}
+.cmp .v{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.note{font-size:12px;color:var(--ink2);margin:6px 0 0}
+.warnline{font-size:12px;color:var(--warn-ink);background:var(--warn-bg);border-radius:6px;padding:4px 8px;margin-top:6px;display:inline-block}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:10px}
+details summary{cursor:pointer;font-weight:700;color:var(--brand);list-style:none}
+details summary::-webkit-details-marker{display:none}
+.veh td input{width:100%;min-width:110px;min-height:36px;padding:6px 8px;font-size:14px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:10px;font-size:14px;display:none;z-index:20}
+@media (max-width:560px){
+  .cmp .v{font-size:16px}
+  th,td{padding:8px 6px;font-size:13px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>搬入重量分析</h1>
+    <span class="status" id="status">読み込み中…</span>
+    <button id="reload" type="button">最新に更新</button>
+  </div>
+</header>
+<nav class="tabs" role="tablist">
+  <div class="wrap">
+    <button role="tab" data-tab="daily" aria-selected="true">日別</button>
+    <button role="tab" data-tab="trend" aria-selected="false">コース推移</button>
+    <button role="tab" data-tab="changes" aria-selected="false">物件の増減</button>
+    <button role="tab" data-tab="settings" aria-selected="false">設定</button>
+  </div>
+</nav>
+<div class="wrap">
+  <div id="banner"></div>
+
+  <!-- 日別 -->
+  <section class="tab on" id="tab-daily">
+    <div class="card">
+      <div class="row">
+        <button class="ghost" id="dPrev" type="button" aria-label="前の日">◀</button>
+        <input type="date" id="dDate">
+        <button class="ghost" id="dNext" type="button" aria-label="次の日">▶</button>
+        <span class="mut" id="dDow"></span>
+      </div>
+    </div>
+    <div class="kpis" id="dKpis"></div>
+    <div class="card">
+      <h2>コース別の実重量 <small>平均＝過去8週の同じ曜日の便</small></h2>
+      <p class="note" id="dLive" style="display:none"></p>
+      <div class="tbl-wrap"><table id="dTable"></table></div>
+    </div>
+  </section>
+
+  <!-- コース推移 -->
+  <section class="tab" id="tab-trend">
+    <div class="card">
+      <div class="row">
+        <label class="f">コース<select id="tCourse"></select></label>
+        <label class="f">期間<select id="tRange">
+          <option value="30">30日</option><option value="90" selected>90日</option>
+          <option value="180">180日</option><option value="365">1年</option>
+        </select></label>
+      </div>
+    </div>
+    <div class="kpis" id="tKpis"></div>
+    <div class="card">
+      <h2 id="tLineTitle">1日あたりの実重量</h2>
+      <div class="chart" id="tLine"></div>
+      <p class="note">縦の点線＝物件の新規・解約などを登録した日。収集のない日は線に含めていません。</p>
+    </div>
+    <div class="card">
+      <h2>曜日ごとの平均 <small>この期間の稼働日だけで計算</small></h2>
+      <div class="chart" id="tDow"></div>
+    </div>
+    <div class="card">
+      <h2>全コースの比較 <small>直近4週と、その前の4週</small></h2>
+      <div class="tbl-wrap"><table id="tAll"></table></div>
+    </div>
+  </section>
+
+  <!-- 物件の増減 -->
+  <section class="tab" id="tab-changes">
+    <div class="card">
+      <details id="cFormBox">
+        <summary>＋ 新規・解約の物件を登録する</summary>
+        <div style="height:12px"></div>
+        <div class="form-grid">
+          <label class="f">回収開始日（解約は最終日の翌日）<input type="date" id="cStart"></label>
+          <label class="f">種別<select id="cType">
+            <option>新規</option><option>解約</option><option>増量</option><option>減量</option>
+          </select></label>
+          <label class="f">コース<select id="cCourse"></select></label>
+          <label class="f">物件名<input id="cName" placeholder="例：〇〇食堂 東田辺店"></label>
+          <label class="f">業種<input id="cIndustry" placeholder="例：飲食店"></label>
+          <label class="f">見込み量<input id="cEstimate" placeholder="例：45L×3袋／月水金"></label>
+        </div>
+        <label class="f" style="margin-bottom:10px">備考<textarea id="cNote"></textarea></label>
+        <button class="btn" id="cSave" type="button">登録する</button>
+      </details>
+    </div>
+    <div class="card">
+      <div class="row spread">
+        <h2 style="margin:0">登録した物件と重量の変化</h2>
+        <label class="f" style="flex-direction:row;align-items:center;gap:6px">比べる期間
+          <select id="cWin"><option value="14">前後2週</option><option value="28" selected>前後4週</option><option value="56">前後8週</option></select>
+        </label>
+      </div>
+      <p class="note">同じコースの「開始日より前」と「開始日から後」で、収集のあった日の1日平均を比べます。前後の期間に同じコースで別の物件の変動があると、その分も混ざります。</p>
+    </div>
+    <div id="cList"></div>
+  </section>
+
+  <!-- 設定 -->
+  <section class="tab" id="tab-settings">
+    <div class="card">
+      <h2>車両とコースの対応 <small>メールに初めて出てきた車番は自動で追加されます</small></h2>
+      <div class="tbl-wrap"><table class="veh" id="sVeh"></table></div>
+    </div>
+    <div class="card">
+      <h2>集計のしかた</h2>
+      <label class="f" style="max-width:420px">日付の数え方
+        <select id="sDayMode">
+          <option value="night">夜間便ごと（おすすめ）</option>
+          <option value="date">搬入した日付のまま</option>
+        </select>
+      </label>
+      <p class="note">「夜間便ごと」は、昼12時より前の搬入を前の日の夜の便として数えます（工場側の「昼間」「夜間」の表記は関係なし）。例：10/26(月) 8:09の搬入 → 10/25(日)夜〜26(月)朝の便。早く出て夜のうちに搬入した分も、同じ便に合算されます。</p>
+      <div id="sPassBox" style="display:none;margin-top:12px">
+        <label class="f" style="max-width:360px">合言葉（登録・編集に必要）<input id="sPass" type="password" autocomplete="off"></label>
+      </div>
+    </div>
+    <div class="card">
+      <h2>データ</h2>
+      <p class="note" id="sInfo"></p>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== 設定 =====
+// Apps Scriptをウェブアプリとしてデプロイしたら、そのURLをここに貼る。空ならデモデータで動く。
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbz2kYflVPPqpTnTvrjS0VJGKahjaobuLH-WvwFfW6euNFU5AYmkUSX-aUahi3LE6gSIeQ/exec';
+const DAYS_TO_LOAD = 400;
+
+// ===== 状態 =====
+const S = { records: [], vehicles: [], changes: [], lastImport: null, sheetUrl: '', needPasscode: false, demo: !GAS_URL };
+let daily = {};        // course -> { 'YYYY-MM-DD': {kg, trips} }
+let plateCourse = {};  // plate -> course label
+let allDates = [];     // 稼働日の一覧（昇順）
+
+const $ = id => document.getElementById(id);
+const DOW = ['日','月','火','水','木','金','土'];
+const fmt = n => Math.round(n).toLocaleString('ja-JP');
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ===== 日付ユーティリティ（JST固定）=====
+const JST = 9 * 3600000;
+const NIGHT_CUTOFF_H = 12; // 夜間便：昼12時より前の搬入は前日の夜の便
+function nightMode() { return lsGet('dayMode', 'night') === 'night'; }
+// 搬入時刻 → どの日の便か（夜間便は出発した夜の日付）
+// 朝遅い搬入は工場側で「昼間」と記録されることがあるので、昼間/夜間の表記は見ずに時刻だけで判定する
+function opDate(ts) {
+  const j = new Date(ts + JST);
+  if (nightMode() && j.getUTCHours() < NIGHT_CUTOFF_H) j.setUTCDate(j.getUTCDate() - 1);
+  return j.toISOString().slice(0, 10);
+}
+// 曜日の表示（夜間便モードは「日→月」）
+function dowLabel(w) { return nightMode() ? DOW[w] + '→' + DOW[(w + 1) % 7] : DOW[w]; }
+function dayLong(ds) {
+  const w = dowOf(ds);
+  if (!nightMode()) return md(ds) + '（' + DOW[w] + '）';
+  return md(ds) + '（' + DOW[w] + '）夜〜' + md(addDays(ds, 1)) + '（' + DOW[(w + 1) % 7] + '）朝';
+}
+function addDays(ds, n) { const d = new Date(ds + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+function dowOf(ds) { return new Date(ds + 'T00:00:00Z').getUTCDay(); }
+function todayJst() { return new Date(Date.now() + JST).toISOString().slice(0, 10); }
+function md(ds) { return Number(ds.slice(5, 7)) + '/' + Number(ds.slice(8, 10)); }
+
+// ===== 集計 =====
+function courseOf(plate) { return plateCourse[plate] || ('未設定（' + plate + '）'); }
+function rebuild() {
+  plateCourse = {};
+  S.vehicles.forEach(v => { if (v.course) plateCourse[v.plate] = String(v.course); });
+  daily = {};
+  const dates = new Set();
+  S.records.forEach(r => {
+    const [ts, plate, , , , kg] = r;
+    const c = courseOf(plate), d = opDate(ts);
+    (daily[c] = daily[c] || {});
+    const o = daily[c][d] = daily[c][d] || { kg: 0, trips: 0 };
+    o.kg += kg; o.trips += 1;
+    dates.add(d);
+  });
+  allDates = [...dates].sort();
+}
+function courses() {
+  const set = new Set(Object.keys(daily));
+  S.vehicles.forEach(v => { if (v.course) set.add(String(v.course)); });
+  return [...set].sort((a, b) => {
+    const ua = a.startsWith('未設定'), ub = b.startsWith('未設定');
+    if (ua !== ub) return ua ? 1 : -1;
+    return a.localeCompare(b, 'ja', { numeric: true });
+  });
+}
+function platesOf(course) { return S.vehicles.filter(v => String(v.course) === course).map(v => v.plate); }
+// [from, to) の稼働日の値
+function daysIn(course, from, to) {
+  const m = daily[course] || {}; const out = [];
+  Object.keys(m).forEach(d => { if (d >= from && d < to && m[d].kg > 0) out.push([d, m[d].kg]); });
+  return out.sort((a, b) => a[0] < b[0] ? -1 : 1);
+}
+const avg = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN;
+function pct(now, base) {
+  if (!isFinite(now) || !isFinite(base) || !base) return '<span class="mut">—</span>';
+  const p = (now - base) / base * 100;
+  const cls = Math.abs(p) < 0.5 ? 'mut' : (p > 0 ? 'up' : 'down');
+  return '<span class="' + cls + '">' + (p > 0 ? '+' : '') + p.toFixed(1) + '%</span>';
+}
+function diffKg(now, base) {
+  if (!isFinite(now) || !isFinite(base)) return '<span class="mut">—</span>';
+  const d = now - base;
+  const cls = Math.abs(d) < 1 ? 'mut' : (d > 0 ? 'up' : 'down');
+  return '<span class="' + cls + '">' + (d > 0 ? '+' : d < 0 ? '−' : '±') + fmt(Math.abs(d)) + '</span>';
+}
+
+// ===== 日別タブ =====
+function renderDaily() {
+  let d = $('dDate').value;
+  if (!d) { d = allDates[allDates.length - 1] || todayJst(); $('dDate').value = d; }
+  $('dDow').textContent = nightMode() ? dayLong(d).replace(/^\d+\/\d+/, '') + 'の便' : '（' + DOW[dowOf(d)] + '）';
+  let tot = 0, trips = 0, active = 0, base = 0;
+  const rows = courses().map(c => {
+    const o = (daily[c] || {})[d];
+    const past = [];
+    for (let i = 1; i <= 8; i++) { const p = (daily[c] || {})[addDays(d, -7 * i)]; if (p && p.kg > 0) past.push(p.kg); }
+    const a = avg(past);
+    if (!o && !isFinite(a)) return '';
+    if (o) { tot += o.kg; trips += o.trips; active++; if (isFinite(a)) base += a; }
+    const plates = c.startsWith('未設定') ? '' : platesOf(c).join('・');
+    return '<tr><td>' + esc(c) + (plates ? '<span class="sub">' + esc(plates) + '</span>' : '') + '</td>' +
+      '<td>' + (o ? o.trips : '<span class="mut">—</span>') + '</td>' +
+      '<td>' + (o ? fmt(o.kg) : '<span class="mut">—</span>') + '</td>' +
+      '<td>' + (isFinite(a) ? fmt(a) : '<span class="mut">—</span>') + '</td>' +
+      '<td>' + (o ? diffKg(o.kg, a) : '<span class="mut">—</span>') + '</td>' +
+      '<td>' + (o ? pct(o.kg, a) : '<span class="mut">—</span>') + '</td></tr>';
+  });
+  $('dTable').innerHTML = '<thead><tr><th>コース</th><th>回数</th><th>実重量kg</th><th>同曜日平均</th><th>差kg</th><th>差%</th></tr></thead><tbody>' +
+    (rows.join('') || '<tr><td colspan="6" class="mut">データがありません</td></tr>') +
+    (active ? '<tr class="total"><td>合計</td><td>' + trips + '</td><td>' + fmt(tot) + '</td><td>' + (base ? fmt(base) : '—') + '</td><td>' + (base ? diffKg(tot, base) : '—') + '</td><td>' + (base ? pct(tot, base) : '—') + '</td></tr>' : '') +
+    '</tbody>';
+  // 最新の便がまだ終わっていない（昼12時前）ときは注意を出す
+  const endOfShift = Date.parse(addDays(d, nightMode() ? 1 : 0) + 'T' + (nightMode() ? '12' : '23') + ':59:00+09:00');
+  const live = $('dLive');
+  live.style.display = Date.now() < endOfShift ? '' : 'none';
+  live.textContent = 'この便はまだ搬入の途中かもしれません。搬入が終わるまで数字は増えます。';
+  $('dKpis').innerHTML =
+    kpi(nightMode() ? 'この便の実重量' : 'この日の実重量', fmt(tot), 'kg', base ? '同曜日平均 ' + fmt(base) + 'kg' : '') +
+    kpi('搬入回数', trips, '回', '') +
+    kpi('稼働コース', active, 'コース', '全' + courses().length + 'コース中');
+}
+function kpi(l, v, unit, s) {
+  return '<div class="kpi"><div class="l">' + l + '</div><div class="v">' + v + '<small>' + unit + '</small></div><div class="s">' + (s || '&nbsp;') + '</div></div>';
+}
+
+// ===== コース推移タブ =====
+function renderTrend() {
+  const list = courses();
+  const sel = $('tCourse');
+  const keep = sel.value || lsGet('tCourse', '');
+  sel.innerHTML = list.map(c => '<option>' + esc(c) + '</option>').join('');
+  if (list.includes(keep)) sel.value = keep;
+  const c = sel.value;
+  const range = Number($('tRange').value);
+  const end = allDates[allDates.length - 1] || todayJst();
+  const from = addDays(end, -range + 1);
+  const pts = daysIn(c, from, addDays(end, 1));
+  const vals = pts.map(p => p[1]);
+  $('tKpis').innerHTML =
+    kpi('1日平均', vals.length ? fmt(avg(vals)) : '—', 'kg', md(from) + '〜' + md(end)) +
+    kpi('最大', vals.length ? fmt(Math.max(...vals)) : '—', 'kg', vals.length ? md(pts[vals.indexOf(Math.max(...vals))][0]) : '') +
+    kpi('最小', vals.length ? fmt(Math.min(...vals)) : '—', 'kg', vals.length ? md(pts[vals.indexOf(Math.min(...vals))][0]) : '') +
+    kpi('稼働日数', vals.length, '日', '');
+  $('tLineTitle').textContent = c + '｜1日あたりの実重量';
+  const marks = S.changes.filter(x => String(x.course) === c && x.start >= from && x.start <= end);
+  lineChart($('tLine'), pts, from, end, marks);
+
+  const byDow = [1, 2, 3, 4, 5, 6, 0].map(w => {
+    const a = pts.filter(p => dowOf(p[0]) === w).map(p => p[1]);
+    return { label: dowLabel(w), v: a.length ? avg(a) : 0, n: a.length };
+  });
+  barChart($('tDow'), byDow.map(b => ({ label: b.label, values: [b.v], ns: [b.n] })), ['平均'], ['var(--after)'], false);
+
+  // 全コース比較
+  const e1 = addDays(end, 1), s1 = addDays(e1, -28), s0 = addDays(s1, -28);
+  $('tAll').innerHTML = '<thead><tr><th>コース</th><th>直近4週 平均kg/日</th><th>前の4週</th><th>差kg</th><th>差%</th></tr></thead><tbody>' +
+    list.map(cc => {
+      const a1 = avg(daysIn(cc, s1, e1).map(p => p[1])), a0 = avg(daysIn(cc, s0, s1).map(p => p[1]));
+      return '<tr><td>' + esc(cc) + '</td><td>' + (isFinite(a1) ? fmt(a1) : '—') + '</td><td>' + (isFinite(a0) ? fmt(a0) : '—') + '</td><td>' + diffKg(a1, a0) + '</td><td>' + pct(a1, a0) + '</td></tr>';
+    }).join('') + '</tbody>';
+}
+
+// ===== グラフ（SVGを自前で描く）=====
+function niceMax(v) { if (!(v > 0)) return 100; const p = Math.pow(10, Math.floor(Math.log10(v))); const n = v / p; const s = [1, 1.2, 1.6, 2, 2.4, 3, 4, 5, 6, 8, 10].find(k => n <= k); return s * p; }
+function lineChart(el, pts, from, end, marks) {
+  const W = Math.max(320, el.clientWidth || 600), H = 240, L = 46, R = 12, T = 16, B = 26;
+  if (!pts.length) { el.innerHTML = '<p class="mut">この期間のデータがありません</p>'; return; }
+  const t0 = Date.parse(from), t1 = Math.max(Date.parse(end), t0 + 86400000);
+  const ymax = niceMax(Math.max(...pts.map(p => p[1])) * 1.08);
+  const x = ds => L + (Date.parse(ds) - t0) / (t1 - t0) * (W - L - R);
+  const y = v => T + (1 - v / ymax) * (H - T - B);
+  let g = '';
+  for (let i = 0; i <= 4; i++) {
+    const v = ymax * i / 4;
+    g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--grid)" stroke-width="1"/>' +
+      '<text x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + fmt(v) + '</text>';
+  }
+  const days = (t1 - t0) / 86400000, step = days <= 31 ? 7 : days <= 100 ? 14 : days <= 190 ? 30 : 60;
+  for (let d = from; d <= end; d = addDays(d, step)) g += '<text x="' + x(d) + '" y="' + (H - 6) + '" text-anchor="middle">' + md(d) + '</text>';
+  marks.forEach(m => {
+    const xx = x(m.start);
+    g += '<line x1="' + xx + '" x2="' + xx + '" y1="' + T + '" y2="' + (H - B) + '" stroke="var(--ink2)" stroke-width="1" stroke-dasharray="3 3"/>' +
+      '<text x="' + (xx + 4) + '" y="' + (T + 10) + '" style="fill:var(--ink2)">' + esc(m.type) + '：' + esc(String(m.name).slice(0, 10)) + '</text>';
+  });
+  const path = pts.map((p, i) => (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join('');
+  const dots = pts.length <= 120 ? pts.map(p => '<circle cx="' + x(p[0]) + '" cy="' + y(p[1]) + '" r="2.5" fill="var(--after)"/>').join('') : '';
+  el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="1日あたりの実重量の推移">' + g +
+    '<path d="' + path + '" fill="none" stroke="var(--after)" stroke-width="2" stroke-linejoin="round"/>' + dots +
+    '<line class="xh" y1="' + T + '" y2="' + (H - B) + '" stroke="var(--ink2)" stroke-width="1" style="display:none"/>' +
+    '<circle class="xd" r="5" fill="var(--after)" stroke="var(--surface)" stroke-width="2" style="display:none"/>' +
+    '<rect x="' + L + '" y="0" width="' + (W - L - R) + '" height="' + H + '" fill="transparent" class="hit"/></svg><div class="tip"></div>';
+  const svg = el.querySelector('svg'), tip = el.querySelector('.tip'), xh = svg.querySelector('.xh'), xd = svg.querySelector('.xd');
+  function move(ev) {
+    const r = svg.getBoundingClientRect(), sx = (ev.clientX - r.left) * W / r.width;
+    let best = pts[0], bd = Infinity;
+    pts.forEach(p => { const dd = Math.abs(x(p[0]) - sx); if (dd < bd) { bd = dd; best = p; } });
+    const px = x(best[0]), py = y(best[1]);
+    xh.setAttribute('x1', px); xh.setAttribute('x2', px); xh.style.display = '';
+    xd.setAttribute('cx', px); xd.setAttribute('cy', py); xd.style.display = '';
+    tip.innerHTML = md(best[0]) + '（' + dowLabel(dowOf(best[0])) + '）<br><b>' + fmt(best[1]) + ' kg</b>';
+    tip.style.left = (px / W * r.width) + 'px'; tip.style.top = (py / H * r.height) + 'px'; tip.style.display = 'block';
+  }
+  function leave() { tip.style.display = 'none'; xh.style.display = 'none'; xd.style.display = 'none'; }
+  const hit = svg.querySelector('.hit');
+  hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move); hit.addEventListener('pointerleave', leave);
+}
+// groups: [{label, values:[...], ns:[...]}]
+function barChart(el, groups, names, colors, showLegend) {
+  const W = Math.max(300, el.clientWidth || 520), H = 200, L = 46, R = 8, T = 18, B = 24;
+  const ymax = niceMax(Math.max(1, ...groups.flatMap(g => g.values)) * 1.1);
+  const gw = (W - L - R) / groups.length, k = names.length, bw = Math.min(26, (gw - 10 - (k - 1) * 2) / k);
+  const y = v => T + (1 - v / ymax) * (H - T - B);
+  let s = '';
+  for (let i = 0; i <= 4; i++) {
+    const v = ymax * i / 4;
+    s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--grid)"/>' +
+      '<text x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + fmt(v) + '</text>';
+  }
+  const items = [];
+  groups.forEach((g, gi) => {
+    const cx = L + gw * gi + gw / 2, x0 = cx - (k * bw + (k - 1) * 2) / 2;
+    g.values.forEach((v, i) => {
+      if (!(v > 0)) return;
+      const bx = x0 + i * (bw + 2), by = y(v), bh = H - B - by, r = Math.min(4, bw / 2, bh);
+      // 上の角だけ丸める
+      s += '<path d="M' + bx + ' ' + (H - B) + 'V' + (by + r) + 'Q' + bx + ' ' + by + ' ' + (bx + r) + ' ' + by + 'H' + (bx + bw - r) + 'Q' + (bx + bw) + ' ' + by + ' ' + (bx + bw) + ' ' + (by + r) + 'V' + (H - B) + 'Z" fill="' + colors[i] + '"/>';
+      items.push({ x: bx - 1, w: bw + 2, cx: bx + bw / 2, y: by, label: g.label, name: names[i], v: v, n: g.ns ? g.ns[i] : null });
+    });
+    s += '<text x="' + cx + '" y="' + (H - 6) + '" text-anchor="middle">' + esc(g.label) + '</text>';
+  });
+  s += items.map((it, i) => '<rect data-i="' + i + '" x="' + it.x + '" y="' + T + '" width="' + it.w + '" height="' + (H - T - B) + '" fill="transparent"/>').join('');
+  const leg = showLegend ? '<div class="legend">' + names.map((n, i) => '<span><i style="background:' + colors[i] + '"></i>' + esc(n) + '</span>').join('') + '</div>' : '';
+  el.innerHTML = leg + '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="曜日ごとの平均実重量">' + s + '</svg><div class="tip"></div>';
+  const svg = el.querySelector('svg'), tip = el.querySelector('.tip');
+  svg.querySelectorAll('rect[data-i]').forEach(rc => {
+    const show = () => {
+      const it = items[rc.dataset.i], r = svg.getBoundingClientRect(), off = svg.getBoundingClientRect().top - el.getBoundingClientRect().top;
+      tip.innerHTML = esc(it.label) + (nightMode() ? 'の便 ' : '曜 ') + (names.length > 1 ? esc(it.name) : '') + '<br><b>' + fmt(it.v) + ' kg</b>' + (it.n != null ? '（' + it.n + '日分）' : '');
+      tip.style.left = (it.cx / W * r.width) + 'px'; tip.style.top = (off + it.y / H * r.height) + 'px'; tip.style.display = 'block';
+    };
+    rc.addEventListener('pointerenter', show); rc.addEventListener('pointerdown', show);
+    rc.addEventListener('pointerleave', () => tip.style.display = 'none');
+  });
+}
+
+// ===== 物件の増減タブ =====
+function renderChanges() {
+  const list = courses().filter(c => !c.startsWith('未設定'));
+  const cs = $('cCourse'), keep = cs.value;
+  cs.innerHTML = list.length ? list.map(c => '<option>' + esc(c) + '</option>').join('') : '<option value="">（設定タブでコース名を入れてください）</option>';
+  if (list.includes(keep)) cs.value = keep;
+  if (!$('cStart').value) $('cStart').value = todayJst();
+
+  const W = Number($('cWin').value);
+  const items = S.changes.slice().sort((a, b) => a.start < b.start ? 1 : -1);
+  if (!items.length) { $('cList').innerHTML = '<div class="card mut">まだ登録がありません。上の「＋ 新規・解約の物件を登録する」から入れてください。</div>'; return; }
+  const last = allDates[allDates.length - 1] || todayJst();
+  $('cList').innerHTML = items.map((x, i) => {
+    const c = String(x.course), st = x.start;
+    const before = daysIn(c, addDays(st, -W), st), after = daysIn(c, st, addDays(st, W));
+    const b = avg(before.map(p => p[1])), a = avg(after.map(p => p[1]));
+    const afterSpan = Math.min(W, Math.max(0, (Date.parse(last) - Date.parse(st)) / 86400000 + 1));
+    const others = S.changes.filter(o => o.id !== x.id && String(o.course) === c && Math.abs(Date.parse(o.start) - Date.parse(st)) < W * 86400000);
+    const minus = x.type === '解約' || x.type === '減量';
+    let status = '';
+    if (st > last) status = '<p class="note">開始日がまだ来ていません。開始後に自動で比較します。</p>';
+    else if (afterSpan < W) status = '<p class="note">開始から' + Math.round(afterSpan) + '日分のデータで暫定の比較です（' + W + '日たつと確定）。</p>';
+    return '<div class="chg">' +
+      '<div class="hd"><span class="badge' + (minus ? ' minus' : '') + '">' + esc(x.type || '新規') + '</span><span class="nm">' + esc(x.name) + '</span></div>' +
+      '<div class="meta">' + esc(c) + '｜' + esc(st) + ' から' + (x.industry ? '｜' + esc(x.industry) : '') + (x.estimate ? '｜見込み ' + esc(x.estimate) : '') + '</div>' +
+      '<div class="cmp">' +
+        '<div><div class="l">前' + W / 7 + '週 平均/日</div><div class="v">' + (isFinite(b) ? fmt(b) : '—') + '<small> kg</small></div><div class="l">' + before.length + '日分</div></div>' +
+        '<div><div class="l">開始後 平均/日</div><div class="v">' + (isFinite(a) ? fmt(a) : '—') + '<small> kg</small></div><div class="l">' + after.length + '日分</div></div>' +
+        '<div><div class="l">変化</div><div class="v">' + diffKg(a, b) + '<small> kg</small></div><div class="l">' + pct(a, b) + '</div></div>' +
+      '</div>' + status +
+      (before.length && after.length ? '<div class="chart" id="cChart' + i + '"></div>' : '') +
+      (others.length ? '<span class="warnline">⚠ 同じ時期に同じコースで「' + others.map(o => esc(o.name)).join('」「') + '」も変動あり。差にはその分も含まれます。</span>' : '') +
+      (x.note ? '<p class="note">備考：' + esc(x.note) + '</p>' : '') +
+      '<div style="text-align:right;margin-top:8px"><button class="ghost" data-del="' + esc(x.id) + '" type="button">削除</button></div>' +
+      '</div>';
+  }).join('');
+  items.forEach((x, i) => {
+    const el = $('cChart' + i); if (!el) return;
+    const c = String(x.course), st = x.start;
+    const before = daysIn(c, addDays(st, -W), st), after = daysIn(c, st, addDays(st, W));
+    const groups = [1, 2, 3, 4, 5, 6, 0].map(w => {
+      const b = before.filter(p => dowOf(p[0]) === w).map(p => p[1]), a = after.filter(p => dowOf(p[0]) === w).map(p => p[1]);
+      return { label: dowLabel(w), values: [b.length ? avg(b) : 0, a.length ? avg(a) : 0], ns: [b.length, a.length] };
+    }).filter(g => g.values[0] || g.values[1]);
+    barChart(el, groups, ['開始前', '開始後'], ['var(--before)', 'var(--after)'], true);
+  });
+  $('cList').querySelectorAll('[data-del]').forEach(btn => btn.onclick = () => delChange(btn.dataset.del));
+}
+
+// ===== 設定タブ =====
+function renderSettings() {
+  const plates = new Set(S.vehicles.map(v => v.plate));
+  S.records.forEach(r => plates.add(r[1]));
+  const last = {};
+  S.records.forEach(r => { if (!last[r[1]] || r[0] > last[r[1]]) last[r[1]] = r[0]; });
+  const vmap = {}; S.vehicles.forEach(v => vmap[v.plate] = v);
+  const rows = [...plates].sort((a, b) => String((vmap[a] || {}).course || '~').localeCompare(String((vmap[b] || {}).course || '~'), 'ja', { numeric: true }));
+  $('sVeh').innerHTML = '<thead><tr><th>車番</th><th>コース名</th><th>担当</th><th>メモ</th><th></th></tr></thead><tbody>' +
+    rows.map((p, i) => {
+      const v = vmap[p] || {};
+      return '<tr data-plate="' + esc(p) + '"><td>' + esc(p) + '<span class="sub">最終搬入 ' + (last[p] ? new Date(last[p] + JST).toISOString().slice(5, 16).replace('-', '/').replace('T', ' ') : '—') + '</span></td>' +
+        '<td><input data-k="course" value="' + esc(v.course) + '" placeholder="例：1号車 東住吉"></td>' +
+        '<td><input data-k="driver" value="' + esc(v.driver) + '"></td>' +
+        '<td><input data-k="memo" value="' + esc(v.memo) + '"></td>' +
+        '<td><button class="ghost" data-save="' + i + '" type="button">保存</button></td></tr>';
+    }).join('') + '</tbody>';
+  $('sVeh').querySelectorAll('[data-save]').forEach(btn => btn.onclick = () => {
+    const tr = btn.closest('tr'), d = { plate: tr.dataset.plate };
+    tr.querySelectorAll('input[data-k]').forEach(inp => d[inp.dataset.k] = inp.value.trim());
+    saveVehicle(d, btn);
+  });
+  $('sDayMode').value = lsGet('dayMode', 'night');
+  $('sPassBox').style.display = S.needPasscode ? '' : 'none';
+  $('sPass').value = lsGet('passcode', '');
+  const first = S.records.length ? new Date(Math.min(...S.records.map(r => r[0])) + JST).toISOString().slice(0, 10) : '—';
+  $('sInfo').innerHTML = '読み込んだ搬入記録：' + S.records.length.toLocaleString() + '件（' + first + ' 〜）' +
+    (S.sheetUrl ? '<br><a href="' + esc(S.sheetUrl) + '" target="_blank" rel="noopener">元のスプレッドシートを開く</a>' : '') +
+    (S.demo ? '<br>いまはデモデータを表示しています。' : '');
+}
+
+// ===== 通信 =====
+async function load() {
+  $('status').textContent = '読み込み中…';
+  try {
+    if (S.demo) Object.assign(S, makeDemo());
+    else {
+      const res = await fetch(GAS_URL + '?action=bootstrap&days=' + DAYS_TO_LOAD, { cache: 'no-store' });
+      const j = await res.json();
+      if (!j.ok) throw new Error(j.error || '読み込みに失敗しました');
+      Object.assign(S, j);
+    }
+    $('banner').innerHTML = S.demo ? '<div class="banner">デモデータで表示中です。Apps ScriptのURLを設定すると、実際の搬入報告メールの数字に切り替わります。</div>' : '';
+    const li = S.lastImport ? new Date(S.lastImport + JST).toISOString().slice(5, 16).replace('-', '/').replace('T', ' ') : '—';
+    $('status').textContent = (S.demo ? 'デモ' : '最終取込 ' + li) + '｜' + S.records.length.toLocaleString() + '件';
+    if (!dateTouched) $('dDate').value = '';
+    rebuild(); renderAll();
+  } catch (e) {
+    $('status').textContent = '読み込みエラー';
+    $('banner').innerHTML = '<div class="banner err">データを読み込めませんでした：' + esc(e.message) + '</div>';
+  }
+}
+async function post(action, payload) {
+  if (S.demo) { toast('デモ表示中は保存されません'); return { ok: false, demo: true }; }
+  const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(Object.assign({ action: action, passcode: lsGet('passcode', '') }, payload)) });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || '保存に失敗しました');
+  return j;
+}
+async function saveChange() {
+  const d = { start: $('cStart').value, type: $('cType').value, course: $('cCourse').value, name: $('cName').value.trim(),
+    industry: $('cIndustry').value.trim(), estimate: $('cEstimate').value.trim(), note: $('cNote').value.trim() };
+  if (!d.start || !d.course || !d.name) { toast('開始日・コース・物件名を入れてください'); return; }
+  $('cSave').disabled = true;
+  try {
+    const j = await post('addChange', { data: d });
+    if (j.demo) { S.changes.push(Object.assign({ id: 'demo' + Date.now() }, d)); }
+    else { S.changes.push(Object.assign({ id: j.id }, d)); toast('登録しました'); }
+    ['cName', 'cIndustry', 'cEstimate', 'cNote'].forEach(id => $(id).value = '');
+    renderChanges();
+  } catch (e) { toast(e.message); }
+  $('cSave').disabled = false;
+}
+async function delChange(id) {
+  const x = S.changes.find(c => c.id === id);
+  if (!x || !confirm('「' + x.name + '」の登録を削除しますか？')) return;
+  try {
+    const j = await post('deleteChange', { id: id });
+    S.changes = S.changes.filter(c => c.id !== id);
+    if (!j.demo) toast('削除しました');
+    renderChanges();
+  } catch (e) { toast(e.message); }
+}
+async function saveVehicle(d, btn) {
+  btn.disabled = true;
+  try {
+    const j = await post('saveVehicle', { data: d });
+    const v = S.vehicles.find(x => x.plate === d.plate);
+    if (v) Object.assign(v, d); else S.vehicles.push(d);
+    if (!j.demo) toast('保存しました');
+    rebuild(); renderAll();
+  } catch (e) { toast(e.message); }
+  btn.disabled = false;
+}
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', 2600); }
+
+// ===== 画面切替 =====
+let current = lsGet('tab', 'daily');
+let dateTouched = false;
+function renderAll() {
+  if (current === 'daily') renderDaily();
+  if (current === 'trend') renderTrend();
+  if (current === 'changes') renderChanges();
+  if (current === 'settings') renderSettings();
+}
+function showTab(name) {
+  current = name; lsSet('tab', name);
+  document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+  document.querySelectorAll('section.tab').forEach(s => s.classList.toggle('on', s.id === 'tab-' + name));
+  renderAll();
+}
+document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+$('reload').onclick = load;
+$('dDate').onchange = () => { dateTouched = true; renderDaily(); };
+$('dPrev').onclick = () => { dateTouched = true; $('dDate').value = stepDate($('dDate').value, -1); renderDaily(); };
+$('dNext').onclick = () => { dateTouched = true; $('dDate').value = stepDate($('dDate').value, 1); renderDaily(); };
+function stepDate(d, dir) {
+  // 稼働日だけをたどる（日曜など収集のない日は飛ばす）
+  const i = allDates.indexOf(d);
+  if (i >= 0 && allDates[i + dir]) return allDates[i + dir];
+  return addDays(d || todayJst(), dir);
+}
+$('tCourse').onchange = () => { lsSet('tCourse', $('tCourse').value); renderTrend(); };
+$('tRange').onchange = renderTrend;
+$('cWin').onchange = renderChanges;
+$('cSave').onclick = saveChange;
+$('sDayMode').onchange = () => { lsSet('dayMode', $('sDayMode').value); $('dDate').value = ''; rebuild(); renderSettings(); toast('日付の数え方を変えました'); };
+$('sPass').onchange = () => lsSet('passcode', $('sPass').value);
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(renderAll, 200); });
+
+// ===== デモデータ =====
+function makeDemo() {
+  // 夜間回収：日→月〜金→土の便は各車2回搬入（日→月は3回のコースあり）、土→日の便は北・南の2台が1回ずつ
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const vehicles = [
+    { plate: 'なにわ800 セ 1365', course: '北コース', driver: '' },
+    { plate: 'なにわ800 セ 1402', course: '南コース', driver: '' },
+    { plate: 'なにわ800 す 2210', course: '生野・東成コース', driver: '' },
+    { plate: 'なにわ800 す 3021', course: '住吉・住之江コース', driver: '' },
+    { plate: 'なにわ800 せ 4415', course: '中央・浪速コース', driver: '' },
+    { plate: 'なにわ800 ら 5502', course: '', driver: '' }
+  ];
+  const base = [3000, 3300, 2600, 2900, 3800, 2200];
+  const satOnly = [0, 1];          // 土→日の便に出る車
+  const sun3 = [0, 4];             // 日→月の便で3回搬入するコース
+  const dowF = [1.3, 1.0, 0.95, 1.0, 1.05, 1.08, 0.45]; // 便の出発曜日ごと（日→月が多い）
+  const factories = ['平野工場', '舞洲工場', '東淀工場', '西淀工場'];
+  const end = addDays(todayJst(), -1), records = [];
+  const newStart = addDays(end, -40);
+  for (let k = 160; k >= 0; k--) {
+    const d = addDays(end, -k), w = dowOf(d);
+    vehicles.forEach((v, i) => {
+      if (w === 6 && !satOnly.includes(i)) return;
+      let kg = base[i] * dowF[w] * (0.9 + rnd() * 0.2);
+      if (i === 2 && d >= newStart && (w === 0 || w === 2 || w === 4)) kg += 260 * (0.85 + rnd() * 0.3);
+      if (i === 4 && d >= addDays(end, -95)) kg -= 320;
+      const trips = w === 6 ? 1 : (w === 0 && sun3.includes(i)) ? 3 : 2;
+      const early = i === 3; // 早く出る人：1回目を夜のうちに搬入
+      for (let t = 0; t < trips; t++) {
+        const h = early && t === 0 ? 22.5 : [26.5, 30.5, 32.5][trips === 1 ? 1 : t] + rnd();
+        const ts = Date.parse(d + 'T00:00:00Z') - JST + h * 3600000;
+        records.push([ts, v.plate, factories[(i + t) % 4], '夜間', '普通', Math.round(kg / trips / 10) * 10]);
+      }
+    });
+  }
+  return {
+    records, vehicles, lastImport: Date.now(), sheetUrl: '', needPasscode: false,
+    changes: [
+      { id: 'd1', start: newStart, type: '新規', course: '生野・東成コース', name: '〇〇食堂 生野店', industry: '飲食店', estimate: '45L×4袋／週3回', note: '' },
+      { id: 'd2', start: addDays(end, -95), type: '解約', course: '中央・浪速コース', name: '△△ビル', industry: 'オフィス', estimate: '', note: '' }
+    ]
+  };
+}
+
+showTab(current);
+load();
+</script>
+</body>
+</html>
