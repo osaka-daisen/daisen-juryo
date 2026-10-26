@@ -170,6 +170,11 @@ td.wl{white-space:normal;text-align:left}
       <div class="chart" id="tDow"></div>
     </div>
     <div class="card">
+      <h2>曜日別の平均（全コース） <small>上で選んだ期間・1便あたりkg</small></h2>
+      <div class="tbl-wrap"><table id="tDowAll"></table></div>
+      <p class="note">合計の行は、その曜日の便に出た全コースの合計重量の平均です。</p>
+    </div>
+    <div class="card">
       <h2>全コースの比較 <small>直近4週と、その前の4週</small></h2>
       <div class="tbl-wrap"><table id="tAll"></table></div>
     </div>
@@ -240,6 +245,19 @@ td.wl{white-space:normal;text-align:left}
       <div id="sPassBox" style="display:none;margin-top:12px">
         <label class="f" style="max-width:360px">合言葉（登録・編集に必要）<input id="sPass" type="password" autocomplete="off"></label>
       </div>
+    </div>
+    <div class="card">
+      <h2>過去のメールを取り込む <small>Gmailに無い古い搬入報告を足すとき</small></h2>
+      <ol class="note" style="padding-left:18px;margin:0 0 10px">
+        <li>Outlookで「搬入報告」を検索し、取り込みたいメールをまとめて選ぶ（Ctrl+A で全部）</li>
+        <li>「ファイル」→「名前を付けて保存」→ ファイルの種類「テキスト形式（*.txt）」で保存</li>
+        <li>下のボタンでそのファイルを選ぶ（何度取り込んでも二重にはなりません）</li>
+      </ol>
+      <div class="row">
+        <input type="file" id="impFile" accept=".txt,.eml,text/plain" multiple>
+        <button class="btn" id="impBtn" type="button">取り込む</button>
+      </div>
+      <p class="note" id="impMsg"></p>
     </div>
     <div class="card">
       <h2>データ</h2>
@@ -404,6 +422,19 @@ function renderTrend() {
     return { label: dowLabel(w), v: a.length ? avg(a) : 0, n: a.length };
   });
   barChart($('tDow'), byDow.map(b => ({ label: b.label, values: [b.v], ns: [b.n] })), ['平均'], ['var(--after)'], false);
+
+  // 曜日別の平均（全コース）
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  const tot = {};
+  list.forEach(cc => daysIn(cc, from, addDays(end, 1)).forEach(p => { tot[p[0]] = (tot[p[0]] || 0) + p[1]; }));
+  const cell = a => a.length ? fmt(avg(a)) + '<span class="sub">' + a.length + '便</span>' : '<span class="mut">—</span>';
+  $('tDowAll').innerHTML = '<thead><tr><th>コース</th>' + order.map(w => '<th>' + dowLabel(w) + '</th>').join('') + '</tr></thead><tbody>' +
+    list.map(cc => {
+      const ps = daysIn(cc, from, addDays(end, 1));
+      if (!ps.length) return '';
+      return '<tr><td>' + esc(cc) + '</td>' + order.map(w => '<td>' + cell(ps.filter(p => dowOf(p[0]) === w).map(p => p[1])) + '</td>').join('') + '</tr>';
+    }).join('') +
+    '<tr class="total"><td>合計</td>' + order.map(w => '<td>' + cell(Object.keys(tot).filter(d => dowOf(d) === w).map(d => tot[d])) + '</td>').join('') + '</tr></tbody>';
 
   // 全コース比較
   const e1 = addDays(end, 1), s1 = addDays(e1, -28), s0 = addDays(s1, -28);
@@ -654,6 +685,49 @@ function renderSettings() {
     (S.demo ? '<br>いまはデモデータを表示しています。' : '');
 }
 
+// ===== 過去メールの取り込み =====
+async function readTextFile(f) {
+  const buf = new Uint8Array(await f.arrayBuffer());
+  if (buf[0] === 0xFF && buf[1] === 0xFE) return new TextDecoder('utf-16le').decode(buf);
+  if (buf[0] === 0xFE && buf[1] === 0xFF) return new TextDecoder('utf-16be').decode(buf);
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+  catch (e) { return new TextDecoder('shift_jis').decode(buf); }
+}
+async function importPast() {
+  const files = [...$('impFile').files];
+  if (!files.length) { toast('ファイルを選んでください'); return; }
+  if (S.demo) { toast('デモ表示中は取り込めません'); return; }
+  const msg = $('impMsg'), btn = $('impBtn');
+  btn.disabled = true;
+  try {
+    let text = '';
+    for (const f of files) text += '\n' + await readTextFile(f);
+    // 搬入報告ごとに分けて、150件ずつ送る
+    const parts = text.split(/(?=搬入報告)/);
+    const n = (text.match(/実重量/g) || []).length;
+    if (!n) { msg.textContent = 'このファイルには搬入報告が見つかりませんでした。'; btn.disabled = false; return; }
+    let found = 0, added = 0, sent = 0, buf = [], cnt = 0;
+    const flush = async () => {
+      if (!buf.length) return;
+      const j = await post('importText', { text: buf.join('') });
+      found += j.found || 0; added += j.added || 0;
+      buf = []; cnt = 0;
+    };
+    for (const part of parts) {
+      buf.push(part);
+      if (/実重量/.test(part)) { cnt++; sent++; }
+      if (cnt >= 150) { msg.textContent = '取り込み中… ' + sent + ' / ' + n + '件'; await flush(); }
+    }
+    await flush();
+    msg.textContent = '完了：搬入報告 ' + found + '件を読み取り、新しく ' + added + '件を追加しました（' + (found - added) + '件は登録済み）。';
+    $('impFile').value = '';
+    await load();
+  } catch (e) {
+    msg.textContent = '取り込みに失敗しました：' + e.message;
+  }
+  btn.disabled = false;
+}
+
 // ===== 通信 =====
 async function load() {
   $('status').textContent = '読み込み中…';
@@ -750,6 +824,7 @@ $('tCourse').onchange = () => { lsSet('tCourse', $('tCourse').value); renderTren
 $('tRange').onchange = renderTrend;
 $('cWin').onchange = renderChanges;
 $('cSave').onclick = saveChange;
+$('impBtn').onclick = importPast;
 $('cWard').onchange = wardHint;
 $('sDayMode').onchange = () => { lsSet('dayMode', $('sDayMode').value); $('dDate').value = ''; rebuild(); renderSettings(); toast('日付の数え方を変えました'); };
 $('sPass').onchange = () => lsSet('passcode', $('sPass').value);
