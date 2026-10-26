@@ -311,14 +311,21 @@ function md(ds) { return Number(ds.slice(5, 7)) + '/' + Number(ds.slice(8, 10));
 
 // ===== 集計 =====
 function courseOf(plate) { return plateCourse[plate] || ('未設定（' + plate + '）'); }
+let skippedShift = '';
 function rebuild() {
   plateCourse = {};
   S.vehicles.forEach(v => { if (v.course) plateCourse[v.plate] = String(v.course); });
   daily = {};
   const dates = new Set();
+  // データのいちばん最初の便は、記録が途中から始まっていて重さが足りないので集計に入れない
+  // （例：転送開始が9/11朝5:32 → 9/10夜〜9/11朝の便は1回目が抜けている）
+  let minTs = Infinity;
+  S.records.forEach(r => { if (r[0] < minTs) minTs = r[0]; });
+  skippedShift = isFinite(minTs) ? opDate(minTs) : '';
   S.records.forEach(r => {
     const [ts, plate, , , , kg] = r;
     const c = courseOf(plate), d = opDate(ts);
+    if (d === skippedShift) return;
     (daily[c] = daily[c] || {});
     const o = daily[c][d] = daily[c][d] || { kg: 0, trips: 0 };
     o.kg += kg; o.trips += 1;
@@ -336,10 +343,15 @@ function courses() {
   });
 }
 function platesOf(course) { return S.vehicles.filter(v => String(v.course) === course).map(v => v.plate); }
-// [from, to) の稼働日の値
+// まだ搬入が終わっていない便（夜間便なら翌日の昼12時まで）
+function isLive(d) {
+  const end = Date.parse(addDays(d, nightMode() ? 1 : 0) + 'T' + (nightMode() ? '12' : '23') + ':59:00+09:00');
+  return Date.now() < end;
+}
+// [from, to) の稼働日の値（搬入途中の便は平均やグラフに入れない）
 function daysIn(course, from, to) {
   const m = daily[course] || {}; const out = [];
-  Object.keys(m).forEach(d => { if (d >= from && d < to && m[d].kg > 0) out.push([d, m[d].kg]); });
+  Object.keys(m).forEach(d => { if (d >= from && d < to && m[d].kg > 0 && !isLive(d)) out.push([d, m[d].kg]); });
   return out.sort((a, b) => a[0] < b[0] ? -1 : 1);
 }
 const avg = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN;
@@ -482,7 +494,7 @@ function lineChart(el, pts, from, end, marks) {
     const px = x(best[0]), py = y(best[1]);
     xh.setAttribute('x1', px); xh.setAttribute('x2', px); xh.style.display = '';
     xd.setAttribute('cx', px); xd.setAttribute('cy', py); xd.style.display = '';
-    tip.innerHTML = md(best[0]) + '（' + dowLabel(dowOf(best[0])) + '）<br><b>' + fmt(best[1]) + ' kg</b>';
+    tip.innerHTML = dayLong(best[0]) + '<br><b>' + fmt(best[1]) + ' kg</b>';
     tip.style.left = (px / W * r.width) + 'px'; tip.style.top = (py / H * r.height) + 'px'; tip.style.display = 'block';
   }
   function leave() { tip.style.display = 'none'; xh.style.display = 'none'; xd.style.display = 'none'; }
@@ -681,6 +693,7 @@ function renderSettings() {
   $('sPass').value = lsGet('passcode', '');
   const first = S.records.length ? new Date(Math.min(...S.records.map(r => r[0])) + JST).toISOString().slice(0, 10) : '—';
   $('sInfo').innerHTML = '読み込んだ搬入記録：' + S.records.length.toLocaleString() + '件（' + first + ' 〜）' +
+    (skippedShift ? '<br>いちばん最初の便（' + dayLong(skippedShift) + '）は記録が途中からなので、集計に入れていません。' : '') +
     (S.sheetUrl ? '<br><a href="' + esc(S.sheetUrl) + '" target="_blank" rel="noopener">元のスプレッドシートを開く</a>' : '') +
     (S.demo ? '<br>いまはデモデータを表示しています。' : '');
 }
