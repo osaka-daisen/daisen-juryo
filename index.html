@@ -93,6 +93,16 @@ tr.total td{font-weight:700;border-top:2px solid var(--line)}
 details summary{cursor:pointer;font-weight:700;color:var(--brand);list-style:none}
 details summary::-webkit-details-marker{display:none}
 .veh td input{width:100%;min-width:110px;min-height:36px;padding:6px 8px;font-size:14px}
+.area-card{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--surface)}
+.area-card .nm{font-weight:700;font-size:16px}
+.area-card .meta{font-size:12px;color:var(--ink2);margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font-size:13px;border-radius:999px;padding:3px 10px;background:var(--brand-soft);color:var(--brand);font-weight:600}
+.chip.minor{background:transparent;border:1px dashed var(--line);color:var(--muted);font-weight:400}
+.stats{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.stats b{font-size:15px;color:var(--ink)}
+td.wl{white-space:normal;text-align:left}
+.hint{font-size:12px;color:var(--ink2);margin:-4px 0 10px}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:10px;font-size:14px;display:none;z-index:20}
 @media (max-width:560px){
   .cmp .v{font-size:16px}
@@ -112,6 +122,7 @@ details summary::-webkit-details-marker{display:none}
   <div class="wrap">
     <button role="tab" data-tab="daily" aria-selected="true">日別</button>
     <button role="tab" data-tab="trend" aria-selected="false">コース推移</button>
+    <button role="tab" data-tab="area" aria-selected="false">コース割</button>
     <button role="tab" data-tab="changes" aria-selected="false">物件の増減</button>
     <button role="tab" data-tab="settings" aria-selected="false">設定</button>
   </div>
@@ -164,6 +175,19 @@ details summary::-webkit-details-marker{display:none}
     </div>
   </section>
 
+  <!-- コース割 -->
+  <section class="tab" id="tab-area">
+    <div class="card">
+      <h2>コースごとの担当区 <small>数字は直近4週の平均</small></h2>
+      <p class="note">担当の区は「設定」タブの「担当の区」欄で変えられます。点線の区は「1件だけ」など、たまに回る区です。</p>
+    </div>
+    <div id="aCourses"></div>
+    <div class="card">
+      <h2>区から見る <small>大阪市24区</small></h2>
+      <div class="tbl-wrap"><table id="aWards"></table></div>
+    </div>
+  </section>
+
   <!-- 物件の増減 -->
   <section class="tab" id="tab-changes">
     <div class="card">
@@ -175,11 +199,13 @@ details summary::-webkit-details-marker{display:none}
           <label class="f">種別<select id="cType">
             <option>新規</option><option>解約</option><option>増量</option><option>減量</option>
           </select></label>
+          <label class="f">区<select id="cWard"></select></label>
           <label class="f">コース<select id="cCourse"></select></label>
           <label class="f">物件名<input id="cName" placeholder="例：〇〇食堂 東田辺店"></label>
           <label class="f">業種<input id="cIndustry" placeholder="例：飲食店"></label>
           <label class="f">見込み量<input id="cEstimate" placeholder="例：45L×3袋／月水金"></label>
         </div>
+        <p class="hint" id="cWardHint"></p>
         <label class="f" style="margin-bottom:10px">備考<textarea id="cNote"></textarea></label>
         <button class="btn" id="cSave" type="button">登録する</button>
       </details>
@@ -471,6 +497,78 @@ function barChart(el, groups, names, colors, showLegend) {
   });
 }
 
+// ===== コース割 =====
+const WARDS = ['北区','都島区','福島区','此花区','中央区','西区','港区','大正区','天王寺区','浪速区','西淀川区','淀川区','東淀川区','東成区','生野区','旭区','城東区','鶴見区','阿倍野区','住之江区','住吉区','東住吉区','平野区','西成区'];
+// 「福島区・1件此花区・大正(1件)」→ {main:['福島区'], minor:['此花区','大正区']}
+function parseArea(str) {
+  const out = { main: [], minor: [] };
+  String(str || '').split(/[・、,，\/\s]+/).forEach(tok => {
+    if (!tok) return;
+    let minor = false, t = tok;
+    let m = t.match(/^\d+件(.+)$/); if (m) { minor = true; t = m[1]; }
+    m = t.match(/^(.+?)[（(]\s*\d+件\s*[)）]$/); if (m) { minor = true; t = m[1]; }
+    if (!/区$/.test(t)) t += '区';
+    const list = minor ? out.minor : out.main;
+    if (!list.includes(t)) list.push(t);
+  });
+  out.minor = out.minor.filter(w => !out.main.includes(w));
+  return out;
+}
+// コース → 担当区（そのコースの車両の区をまとめる）
+function courseAreas() {
+  const map = {};
+  S.vehicles.forEach(v => {
+    const a = parseArea(v.area);
+    if (!a.main.length && !a.minor.length) return;
+    const c = courseOf(v.plate);
+    const o = map[c] = map[c] || { main: [], minor: [] };
+    a.main.forEach(w => { if (!o.main.includes(w)) o.main.push(w); });
+    a.minor.forEach(w => { if (!o.minor.includes(w)) o.minor.push(w); });
+  });
+  Object.values(map).forEach(o => { o.minor = o.minor.filter(w => !o.main.includes(w)); });
+  return map;
+}
+function wardCourses(ward) {
+  const map = courseAreas(), main = [], minor = [];
+  Object.keys(map).forEach(c => { if (map[c].main.includes(ward)) main.push(c); else if (map[c].minor.includes(ward)) minor.push(c); });
+  const sort = a => a.sort((x, y) => x.localeCompare(y, 'ja', { numeric: true }));
+  return { main: sort(main), minor: sort(minor) };
+}
+function renderArea() {
+  const map = courseAreas();
+  const end = allDates[allDates.length - 1] || todayJst(), e1 = addDays(end, 1), s1 = addDays(e1, -28);
+  $('aCourses').innerHTML = courses().map(c => {
+    const a = map[c] || { main: [], minor: [] };
+    const vs = S.vehicles.filter(v => courseOf(v.plate) === c);
+    if (c.startsWith('未設定') && !a.main.length && !a.minor.length) return '';
+    const days = daysIn(c, s1, e1), kgs = days.map(p => p[1]);
+    let trips = 0; days.forEach(p => trips += daily[c][p[0]].trips);
+    const chips = a.main.map(w => '<span class="chip">' + esc(w) + '</span>').join('') +
+      a.minor.map(w => '<span class="chip minor">' + esc(w) + '（たまに）</span>').join('');
+    return '<div class="area-card"><div class="nm">' + esc(c) + '</div>' +
+      '<div class="meta">' + vs.map(v => esc(v.plate) + (v.memo ? '（' + esc(String(v.memo).split(/[（(。]/)[0]) + '）' : '')).join('／') + '</div>' +
+      (chips ? '<div class="chips">' + chips + '</div>' : '<p class="note">担当の区が未登録です（設定タブで入力）</p>') +
+      '<div class="stats"><span>1便あたり <b>' + (kgs.length ? fmt(avg(kgs)) : '—') + '</b> kg</span>' +
+      '<span>1便の搬入 <b>' + (days.length ? (trips / days.length).toFixed(1) : '—') + '</b> 回</span>' +
+      '<span>4週の便数 <b>' + days.length + '</b></span></div></div>';
+  }).join('') || '<div class="card mut">コースがまだありません</div>';
+  $('aWards').innerHTML = '<thead><tr><th>区</th><th>回るコース</th><th>たまに</th></tr></thead><tbody>' +
+    WARDS.map(w => {
+      const r = wardCourses(w);
+      return '<tr><td>' + w + '</td><td class="wl">' + (r.main.length ? r.main.map(esc).join('・') : '<span class="mut">担当なし</span>') + '</td>' +
+        '<td class="wl mut">' + r.minor.map(esc).join('・') + '</td></tr>';
+    }).join('') + '</tbody>';
+}
+function wardHint() {
+  const w = $('cWard').value, h = $('cWardHint');
+  if (!w) { h.textContent = ''; return; }
+  const r = wardCourses(w);
+  if (!r.main.length && !r.minor.length) { h.textContent = w + 'を担当しているコースは登録されていません。'; return; }
+  h.textContent = w + 'を回るコース：' + (r.main.join('・') || 'なし') + (r.minor.length ? '（たまに：' + r.minor.join('・') + '）' : '');
+  const cand = r.main.length ? r.main : r.minor;
+  if (!cand.includes($('cCourse').value)) $('cCourse').value = cand[0];
+}
+
 // ===== 物件の増減タブ =====
 function renderChanges() {
   const list = courses().filter(c => !c.startsWith('未設定'));
@@ -478,6 +576,10 @@ function renderChanges() {
   cs.innerHTML = list.length ? list.map(c => '<option>' + esc(c) + '</option>').join('') : '<option value="">（設定タブでコース名を入れてください）</option>';
   if (list.includes(keep)) cs.value = keep;
   if (!$('cStart').value) $('cStart').value = todayJst();
+  const ws = $('cWard'), wkeep = ws.value;
+  ws.innerHTML = '<option value="">（選ぶとコース候補を表示）</option>' + WARDS.map(w => '<option>' + w + '</option>').join('');
+  ws.value = wkeep;
+  wardHint();
 
   const W = Number($('cWin').value);
   const items = S.changes.slice().sort((a, b) => a.start < b.start ? 1 : -1);
@@ -495,7 +597,7 @@ function renderChanges() {
     else if (afterSpan < W) status = '<p class="note">開始から' + Math.round(afterSpan) + '日分のデータで暫定の比較です（' + W + '日たつと確定）。</p>';
     return '<div class="chg">' +
       '<div class="hd"><span class="badge' + (minus ? ' minus' : '') + '">' + esc(x.type || '新規') + '</span><span class="nm">' + esc(x.name) + '</span></div>' +
-      '<div class="meta">' + esc(c) + '｜' + esc(st) + ' から' + (x.industry ? '｜' + esc(x.industry) : '') + (x.estimate ? '｜見込み ' + esc(x.estimate) : '') + '</div>' +
+      '<div class="meta">' + esc(c) + (x.ward ? '｜' + esc(x.ward) : '') + '｜' + esc(st) + ' から' + (x.industry ? '｜' + esc(x.industry) : '') + (x.estimate ? '｜見込み ' + esc(x.estimate) : '') + '</div>' +
       '<div class="cmp">' +
         '<div><div class="l">前' + W / 7 + '週 平均/日</div><div class="v">' + (isFinite(b) ? fmt(b) : '—') + '<small> kg</small></div><div class="l">' + before.length + '日分</div></div>' +
         '<div><div class="l">開始後 平均/日</div><div class="v">' + (isFinite(a) ? fmt(a) : '—') + '<small> kg</small></div><div class="l">' + after.length + '日分</div></div>' +
@@ -528,11 +630,12 @@ function renderSettings() {
   S.records.forEach(r => { if (!last[r[1]] || r[0] > last[r[1]]) last[r[1]] = r[0]; });
   const vmap = {}; S.vehicles.forEach(v => vmap[v.plate] = v);
   const rows = [...plates].sort((a, b) => String((vmap[a] || {}).course || '~').localeCompare(String((vmap[b] || {}).course || '~'), 'ja', { numeric: true }));
-  $('sVeh').innerHTML = '<thead><tr><th>車番</th><th>コース名</th><th>担当</th><th>メモ</th><th></th></tr></thead><tbody>' +
+  $('sVeh').innerHTML = '<thead><tr><th>車番</th><th>コース名</th><th>担当の区（・で区切る）</th><th>担当</th><th>メモ</th><th></th></tr></thead><tbody>' +
     rows.map((p, i) => {
       const v = vmap[p] || {};
       return '<tr data-plate="' + esc(p) + '"><td>' + esc(p) + '<span class="sub">最終搬入 ' + (last[p] ? new Date(last[p] + JST).toISOString().slice(5, 16).replace('-', '/').replace('T', ' ') : '—') + '</span></td>' +
-        '<td><input data-k="course" value="' + esc(v.course) + '" placeholder="例：1号車 東住吉"></td>' +
+        '<td><input data-k="course" value="' + esc(v.course) + '" placeholder="例：9389コース"></td>' +
+        '<td><input data-k="area" value="' + esc(v.area) + '" placeholder="例：北区・福島区・此花区(1件)" style="min-width:240px"></td>' +
         '<td><input data-k="driver" value="' + esc(v.driver) + '"></td>' +
         '<td><input data-k="memo" value="' + esc(v.memo) + '"></td>' +
         '<td><button class="ghost" data-save="' + i + '" type="button">保存</button></td></tr>';
@@ -581,7 +684,7 @@ async function post(action, payload) {
 }
 async function saveChange() {
   const d = { start: $('cStart').value, type: $('cType').value, course: $('cCourse').value, name: $('cName').value.trim(),
-    industry: $('cIndustry').value.trim(), estimate: $('cEstimate').value.trim(), note: $('cNote').value.trim() };
+    industry: $('cIndustry').value.trim(), estimate: $('cEstimate').value.trim(), note: $('cNote').value.trim(), ward: $('cWard').value };
   if (!d.start || !d.course || !d.name) { toast('開始日・コース・物件名を入れてください'); return; }
   $('cSave').disabled = true;
   try {
@@ -622,6 +725,7 @@ let dateTouched = false;
 function renderAll() {
   if (current === 'daily') renderDaily();
   if (current === 'trend') renderTrend();
+  if (current === 'area') renderArea();
   if (current === 'changes') renderChanges();
   if (current === 'settings') renderSettings();
 }
@@ -646,6 +750,7 @@ $('tCourse').onchange = () => { lsSet('tCourse', $('tCourse').value); renderTren
 $('tRange').onchange = renderTrend;
 $('cWin').onchange = renderChanges;
 $('cSave').onclick = saveChange;
+$('cWard').onchange = wardHint;
 $('sDayMode').onchange = () => { lsSet('dayMode', $('sDayMode').value); $('dDate').value = ''; rebuild(); renderSettings(); toast('日付の数え方を変えました'); };
 $('sPass').onchange = () => lsSet('passcode', $('sPass').value);
 let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(renderAll, 200); });
